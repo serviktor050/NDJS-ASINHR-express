@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const fileMulter = require("../middleware/file");
 
@@ -78,6 +79,27 @@ router.delete('/books/:id', (req, res) => {
     if(idx !== -1){
         books.splice(idx, 1)
         res.json({message: "Ok"})
+    } else {
+        res.status(404)
+        res.json({message: "Книга не найдена"})
+    }
+})
+
+router.get('/books/:id/download',(req, res) => {
+    const {books} = library
+    const {id} = req.params
+    const currentBook = books.find(el => el.id === id)
+
+    if (currentBook && currentBook.fileBook){
+        const filePath = path.resolve(__dirname, '..', 'public', 'books', path.basename(currentBook.fileBook));
+
+        res.download(filePath, (err) => {
+            if (err) {
+                res.status(500)
+                res.json({ message: "Ошибка при загрузке файла" });
+            }
+        });
+
     } else {
         res.status(404)
         res.json({message: "Книга не найдена"})
