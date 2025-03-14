@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const fileMulter = require("../middleware/file");
 
 const { Book, library } = require('../library');
 
@@ -22,7 +23,9 @@ router.get('/books/:id', (req, res) => {
     }
 })
 
-router.post('/books/', (req, res) => {
+router.post('/books/',
+    fileMulter.single('fileBook'),
+    (req, res) => {
     const {books} = library
     const {
         title,
@@ -30,8 +33,9 @@ router.post('/books/', (req, res) => {
         authors,
         favorite,
         fileCover,
-        fileName
-    } = req.body
+        fileName,
+        } = req.body
+    const {path: fileBook} = req?.file || ''
 
     const newBook = new Book({
         title,
@@ -39,7 +43,8 @@ router.post('/books/', (req, res) => {
         authors,
         favorite,
         fileCover,
-        fileName
+        fileName,
+        fileBook
     })
     books.push(newBook)
 
@@ -47,13 +52,17 @@ router.post('/books/', (req, res) => {
     res.json(newBook)
 })
 
-router.put('/books/:id', (req, res) => {
+router.put('/books/:id',
+    fileMulter.single('fileBook'),
+    (req, res) => {
+    const {path: fileBook} = req?.file || ''
+
     const {books} = library
     const {id} = req.params
     const currentBook = books.find(el => el.id === id)
 
     if (currentBook){
-        Object.assign(currentBook, req.body);
+        Object.assign(currentBook, {...req.body, fileBook});
         res.json(currentBook)
     } else {
         res.status(404)
