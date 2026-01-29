@@ -11,8 +11,21 @@ services:
     environment:
       - PORT=8080
       - REDIS_URL=redis://storage
+      - COUNTER_SERVICE_URL=http://counter:3002
     ports:
       - "8080:8080"
+    command: npm run dev
+    depends_on:
+      - storage
+      - counter
+  counter:
+    image: node:18.20
+    working_dir: /app
+    volumes:
+      - ./microservices/counter/:/app
+    environment:
+      - PORT=3002
+      - REDIS_URL=redis://storage
     command: npm run dev
     depends_on:
       - storage

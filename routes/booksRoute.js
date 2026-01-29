@@ -34,14 +34,14 @@ router.post('/books/create', async (req, res) => {
 })
 
 router.get('/books/:id', async (req, res) => {
-    const books = await bookStorage.getAllBooks();
     const {id} = req.params;
-    const currentBook = books.find(el => el.id === id)
+    const currentBook = await bookStorage.getBookById(id);
 
     if(currentBook) {
         res.render("books/view", {
             title: "О книге",
             book: currentBook,
+            count: currentBook.count | 'Нет просмотров'
         });
     } else {
         res.redirect('/404');

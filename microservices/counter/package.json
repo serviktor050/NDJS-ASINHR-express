@@ -1,7 +1,7 @@
 {
-  "name": "ndjs-asinhr-express",
+  "name": "counter",
   "version": "1.0.0",
-  "description": "Домашняя работа к 2.1. Express",
+  "description": "The books counter in the library",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon -r dotenv/config index.js",
@@ -11,15 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.13.4",
-    "ejs": "^3.1.10",
-    "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "redis": "^5.10.0",
-    "uuid": "^11.1.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "dotenv": "^16.4.7",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.11"
   }
 }
