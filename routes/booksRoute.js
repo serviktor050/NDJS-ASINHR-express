@@ -2,11 +2,12 @@ const express = require('express');
 const path = require('path');
 const router = express.Router();
 const fileMulter = require("../middleware/file");
+const bookStorage = require('../storage');
 
 const { Book, library } = require('../library');
 
-router.get('/books', (req, res) => {
-    const {books} = library
+router.get('/books', async (req, res) => {
+    const books = await bookStorage.getAllBooks();
 
     res.render('books/index', {
         title: 'Книги',
@@ -21,21 +22,19 @@ router.get('/books/create', (req, res) => {
     });
 })
 
-router.post('/books/create', (req, res) => {
-    const {books} = library
+router.post('/books/create', async (req, res) => {
     const {title, description} = req.body;
-
     const newBook = new Book({
         title,
         description,
     })
-    books.push(newBook)
+    await bookStorage.saveBook(newBook);
 
     res.redirect('/books')
 })
 
-router.get('/books/:id', (req, res) => {
-    const {books} = library
+router.get('/books/:id', async (req, res) => {
+    const books = await bookStorage.getAllBooks();
     const {id} = req.params;
     const currentBook = books.find(el => el.id === id)
 
@@ -49,8 +48,8 @@ router.get('/books/:id', (req, res) => {
     }
 });
 
-router.get('/books/update/:id', (req, res) => {
-    const {books} = library;
+router.get('/books/update/:id', async (req, res) => {
+    const books = await bookStorage.getAllBooks();
     const {id} = req.params;
     const currentBook = books.find(el => el.id === id)
 
@@ -64,35 +63,28 @@ router.get('/books/update/:id', (req, res) => {
     }
 });
 
-router.post('/books/update/:id', (req, res) => {
-    const {books} = library;
+router.post('/books/update/:id', async (req, res) => {
+    const books = await bookStorage.getAllBooks();
     const {id} = req.params;
     const {title, description} = req.body;
+    const updates = {title, description}
     const currentBookIdx = books.findIndex(el => el.id === id)
 
     if (currentBookIdx === -1) {
         res.redirect('/404');
     }
 
-    books[currentBookIdx] = {
-        ...books[currentBookIdx],
-        title,
-        description,
-    }
+    await bookStorage.updateBook(books, id, updates);
     res.redirect(`/books/${id}`);
 });
 
-router.post('/books/delete/:id', (req, res) => {
-    const {books} = library;
+router.post('/books/delete/:id', async (req, res) => {
     const {id} = req.params;
-    const currentBookIdx = books.findIndex(el => el.id === id);
+    const isDeleted = await bookStorage.deleteBook(id);
 
-    if (currentBookIdx === -1) {
-        res.redirect('/404');
+    if (isDeleted) {
+        res.redirect(`/books`);
     }
-
-    books.splice(currentBookIdx, 1);
-    res.redirect(`/books`);
 });
 
 /*Роуты для задания с проверкой в Postman*/

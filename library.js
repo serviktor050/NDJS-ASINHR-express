@@ -17,12 +17,27 @@ class Book {
         this.title = title
         this.description = description
         this.authors= authors
-        this.favorite= favorite
+        this.favorite= Boolean(favorite);
         this.fileCover= fileCover
         this.fileName= fileName
         this.fileBook= fileBook
     }
+
+    toJSON() {
+        return {
+            id: this.id,
+            title: this.title,
+            description: this.description,
+            authors: this.authors,
+            favorite: this.favorite,
+            fileCover: this.fileCover,
+            fileName: this.fileName,
+            fileBook: this.fileBook
+        };
+    }
 }
+
+/* Для проверки в Postman */
 
 const library = {
     books: [],
