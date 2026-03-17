@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 
 const userRoute = require('./routes/userRoute');
 const booksRoute = require('./routes/booksRoute');
@@ -17,7 +18,17 @@ app.use('/', booksRoute);
 
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT)
+async function start() {
+    try {
+        await mongoose.connect('mongodb://root:example@mongo:27017/?authSource=admin');
+        console.log('MongoDB connected');
+        app.listen(PORT, () => {
+            console.log(`Listening on ${PORT}`);
+        });
+    } catch (e) {
+        console.error(e);
+    }
+}
 
-console.log(`Listening on ${PORT}`);
+const PORT = process.env.PORT || 3000
+start()

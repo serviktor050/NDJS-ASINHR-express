@@ -3,8 +3,102 @@ const path = require('path');
 const router = express.Router();
 const fileMulter = require("../middleware/file");
 const bookStorage = require('../storage');
-
 const { Book, library } = require('../library');
+const BookSchema = require('../models/book');
+
+/*Роуты для задания по Mongoose с проверкой в Postman*/
+
+router.get('/api/books', async (req, res) => {
+    try {
+        const books = await BookSchema.find().select('-__v');
+        res.json(books);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.get('/api/books/:id', async (req, res) => {
+    const {id} = req.params;
+    try {
+        const book = await BookSchema.findById(id).select('-__v');
+        if (!book) {
+            return res.status(404).json('На найдено');
+        }
+        res.json(book);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.post('/api/books/', async (req, res) => {
+    const NewBook = new BookSchema (req.body)
+    try {
+        await NewBook.save();
+        res.json(NewBook);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.put('/api/books/:id', async (req, res) => {
+    const {id} = req.params;
+    const {title, description} = req.body;
+    try {
+        const updatedBook = await BookSchema.findByIdAndUpdate(
+            id,
+            { title, description },
+            { new: true }
+        );
+        if (!updatedBook) {
+            return res.status(404).json('Не найдено');
+        }
+        res.redirect(`/books/${id}`);
+        } catch (e) {
+            res.status(500).json(e)
+        }
+})
+
+router.delete('/api/books/:id',async (req, res) => {
+    const {id} = req.params;
+    try {
+        const book = await BookSchema.deleteOne({_id: id});
+        if (!book) {
+            return res.status(404).json('Не найдено');
+        }
+        res.json('ok');
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+/*Роуты для задания по докеру с использованием Redis*/
+
+router.get('/books', async (req, res) => {
+    const books = await bookStorage.getAllBooks();
+
+    res.render('books/index', {
+        title: 'Книги',
+        books: books,
+    })
+})
+
+router.get('/books/create', (req, res) => {
+    res.render("books/create", {
+        title: "Добавить книгу",
+        book: {},
+    });
+})
+
+router.post('/books/create', async (req, res) => {
+    const {title, description} = req.body;
+    const newBook = new Book({
+        title,
+        description,
+    })
+    await bookStorage.saveBook(newBook);
+
+    res.redirect('/books')
+})
 
 router.get('/books', async (req, res) => {
     const books = await bookStorage.getAllBooks();
@@ -89,105 +183,105 @@ router.post('/books/delete/:id', async (req, res) => {
 
 /*Роуты для задания с проверкой в Postman*/
 
-router.get('/api/books', (req, res) => {
-    const {books} = library
-
-    res.json(books)
-})
-
-router.get('/api/books/:id', (req, res) => {
-    const {books} = library
-    const {id} = req.params
-    const currentBook = books.find(el => el.id === id)
-
-    if(currentBook) {
-        res.json(currentBook)
-    } else {
-        res.status(404)
-        res.json({message: "Книга не найдена"})
-    }
-})
-
-router.post('/api/books/',
-    fileMulter.single('fileBook'),
-    (req, res) => {
-    const {books} = library
-    const {
-        title,
-        description,
-        authors,
-        favorite,
-        fileCover,
-        fileName,
-        } = req.body
-    const {path: fileBook} = req?.file || ''
-
-    const newBook = new Book({
-        title,
-        description,
-        authors,
-        favorite,
-        fileCover,
-        fileName,
-        fileBook
-    })
-    books.push(newBook)
-
-    res.status(201)
-    res.json(newBook)
-})
-
-router.put('/api/books/:id',
-    fileMulter.single('fileBook'),
-    (req, res) => {
-    const {path: fileBook} = req?.file || ''
-
-    const {books} = library
-    const {id} = req.params
-    const currentBook = books.find(el => el.id === id)
-
-    if (currentBook){
-        Object.assign(currentBook, {...req.body, fileBook});
-        res.json(currentBook)
-    } else {
-        res.status(404)
-        res.json({message: "Книга не найдена"})
-    }
-})
-
-router.delete('/api/books/:id', (req, res) => {
-    const {books} = library
-    const {id} = req.params
-    const idx = books.findIndex(el => el.id === id)
-
-    if(idx !== -1){
-        books.splice(idx, 1)
-        res.json({message: "Ok"})
-    } else {
-        res.status(404)
-        res.json({message: "Книга не найдена"})
-    }
-})
-
-router.get('/api/books/:id/download',(req, res) => {
-    const {books} = library
-    const {id} = req.params
-    const currentBook = books.find(el => el.id === id)
-
-    if (currentBook && currentBook.fileBook){
-        const filePath = path.resolve(__dirname, '..', 'public', 'books', path.basename(currentBook.fileBook));
-
-        res.download(filePath, (err) => {
-            if (err) {
-                res.status(500)
-                res.json({ message: "Ошибка при загрузке файла" });
-            }
-        });
-
-    } else {
-        res.status(404)
-        res.json({message: "Книга не найдена"})
-    }
-})
+// router.get('/api/books', (req, res) => {
+//     const {books} = library
+//
+//     res.json(books)
+// })
+//
+// router.get('/api/books/:id', (req, res) => {
+//     const {books} = library
+//     const {id} = req.params
+//     const currentBook = books.find(el => el.id === id)
+//
+//     if(currentBook) {
+//         res.json(currentBook)
+//     } else {
+//         res.status(404)
+//         res.json({message: "Книга не найдена"})
+//     }
+// })
+//
+// router.post('/api/books/',
+//     fileMulter.single('fileBook'),
+//     (req, res) => {
+//     const {books} = library
+//     const {
+//         title,
+//         description,
+//         authors,
+//         favorite,
+//         fileCover,
+//         fileName,
+//         } = req.body
+//     const {path: fileBook} = req?.file || ''
+//
+//     const newBook = new Book({
+//         title,
+//         description,
+//         authors,
+//         favorite,
+//         fileCover,
+//         fileName,
+//         fileBook
+//     })
+//     books.push(newBook)
+//
+//     res.status(201)
+//     res.json(newBook)
+// })
+//
+// router.put('/api/books/:id',
+//     fileMulter.single('fileBook'),
+//     (req, res) => {
+//     const {path: fileBook} = req?.file || ''
+//
+//     const {books} = library
+//     const {id} = req.params
+//     const currentBook = books.find(el => el.id === id)
+//
+//     if (currentBook){
+//         Object.assign(currentBook, {...req.body, fileBook});
+//         res.json(currentBook)
+//     } else {
+//         res.status(404)
+//         res.json({message: "Книга не найдена"})
+//     }
+// })
+//
+// router.delete('/api/books/:id', (req, res) => {
+//     const {books} = library
+//     const {id} = req.params
+//     const idx = books.findIndex(el => el.id === id)
+//
+//     if(idx !== -1){
+//         books.splice(idx, 1)
+//         res.json({message: "Ok"})
+//     } else {
+//         res.status(404)
+//         res.json({message: "Книга не найдена"})
+//     }
+// })
+//
+// router.get('/api/books/:id/download',(req, res) => {
+//     const {books} = library
+//     const {id} = req.params
+//     const currentBook = books.find(el => el.id === id)
+//
+//     if (currentBook && currentBook.fileBook){
+//         const filePath = path.resolve(__dirname, '..', 'public', 'books', path.basename(currentBook.fileBook));
+//
+//         res.download(filePath, (err) => {
+//             if (err) {
+//                 res.status(500)
+//                 res.json({ message: "Ошибка при загрузке файла" });
+//             }
+//         });
+//
+//     } else {
+//         res.status(404)
+//         res.json({message: "Книга не найдена"})
+//     }
+// })
 
 module.exports = router;
