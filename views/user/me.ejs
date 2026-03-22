@@ -1,0 +1,17 @@
+<%- include('../port/header', {title: title}) %>
+<%- include('../port/menu')%>
+
+<div class="jumbotron jumbotron-fluid">
+    <div class="container">
+        <h1><%= title %></h1>
+        <p>
+            <b>ID:</b>         <%= id %><br />
+            <b>Username:</b>   <%= username %><br />
+            <b>Name:</b>       <%= displayName %><br />
+            <b>Email:</b>  <%= email %><br />
+        </p>
+        <a href="/logout">Выйти</a>
+    </div>
+</div>
+
+<%- include('../port/footer') %>

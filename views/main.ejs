@@ -1,9 +1,15 @@
 <%- include('./port/header', {title: title}) %>
-<%- include('./port/menu') %>
+<%- include('./port/menu', {user: user}) %>
 
 <div class="jumbotron jumbotron-fluid">
     <div class="container">
         <h1 class="display-4"><%= title %></h1>
+        <% if (!user) { %>
+            <p>Пожалуйста, <a href="/login"> авторизуйтесь </a></p>
+        <% } else { %>
+            <p>Привет, <%= user.username %>. </p>
+            <p>Перейти в <a href="/me">профиль</a>.</p>
+        <% } %>
     </div>
 </div>
 
