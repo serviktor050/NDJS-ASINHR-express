@@ -6,71 +6,6 @@ const bookStorage = require('../storage');
 const { Book, library } = require('../library');
 const BookSchema = require('../models/book');
 
-/*Роуты для задания по Mongoose с проверкой в Postman*/
-
-router.get('/api/books', async (req, res) => {
-    try {
-        const books = await BookSchema.find().select('-__v');
-        res.json(books);
-    } catch (e) {
-        res.status(500).json(e)
-    }
-})
-
-router.get('/api/books/:id', async (req, res) => {
-    const {id} = req.params;
-    try {
-        const book = await BookSchema.findById(id).select('-__v');
-        if (!book) {
-            return res.status(404).json('На найдено');
-        }
-        res.json(book);
-    } catch (e) {
-        res.status(500).json(e)
-    }
-})
-
-router.post('/api/books/', async (req, res) => {
-    const NewBook = new BookSchema (req.body)
-    try {
-        await NewBook.save();
-        res.json(NewBook);
-    } catch (e) {
-        res.status(500).json(e)
-    }
-})
-
-router.put('/api/books/:id', async (req, res) => {
-    const {id} = req.params;
-    const {title, description} = req.body;
-    try {
-        const updatedBook = await BookSchema.findByIdAndUpdate(
-            id,
-            { title, description },
-            { new: true }
-        );
-        if (!updatedBook) {
-            return res.status(404).json('Не найдено');
-        }
-        res.redirect(`/books/${id}`);
-        } catch (e) {
-            res.status(500).json(e)
-        }
-})
-
-router.delete('/api/books/:id',async (req, res) => {
-    const {id} = req.params;
-    try {
-        const book = await BookSchema.deleteOne({_id: id});
-        if (!book) {
-            return res.status(404).json('Не найдено');
-        }
-        res.json('ok');
-    } catch (e) {
-        res.status(500).json(e)
-    }
-})
-
 /*Роуты для задания по докеру с использованием Redis*/
 
 router.get('/books', async (req, res) => {
@@ -180,6 +115,71 @@ router.post('/books/delete/:id', async (req, res) => {
         res.redirect(`/books`);
     }
 });
+
+/*Роуты для задания по Mongoose с проверкой в Postman*/
+
+router.get('/api/books', async (req, res) => {
+    try {
+        const books = await BookSchema.find().select('-__v');
+        res.json(books);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.get('/api/books/:id', async (req, res) => {
+    const {id} = req.params;
+    try {
+        const book = await BookSchema.findById(id).select('-__v');
+        if (!book) {
+            return res.status(404).json('На найдено');
+        }
+        res.json(book);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.post('/api/books/', async (req, res) => {
+    const NewBook = new BookSchema (req.body)
+    try {
+        await NewBook.save();
+        res.json(NewBook);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.put('/api/books/:id', async (req, res) => {
+    const {id} = req.params;
+    const {title, description} = req.body;
+    try {
+        const updatedBook = await BookSchema.findByIdAndUpdate(
+            id,
+            { title, description },
+            { new: true }
+        );
+        if (!updatedBook) {
+            return res.status(404).json('Не найдено');
+        }
+        res.redirect(`/books/${id}`);
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
+
+router.delete('/api/books/:id',async (req, res) => {
+    const {id} = req.params;
+    try {
+        const book = await BookSchema.deleteOne({_id: id});
+        if (!book) {
+            return res.status(404).json('Не найдено');
+        }
+        res.json('ok');
+    } catch (e) {
+        res.status(500).json(e)
+    }
+})
 
 /*Роуты для задания с проверкой в Postman*/
 
