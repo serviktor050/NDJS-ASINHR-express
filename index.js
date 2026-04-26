@@ -4,6 +4,7 @@ const session = require('express-session');
 const passport = require('passport');
 const http = require('http');
 const socketIO = require('socket.io');
+const commentStorage = require('./commentStorage');
 
 const userRoute = require('./routes/userRoute');
 const booksRoute = require('./routes/booksRoute');
@@ -41,23 +42,49 @@ async function start() {
     }
 }
 
-io.on('connection', (socket) => {
-    const {id} = socket;
-    console.log('connection' + id);
+io.on('connection', async (socket) => {
+    const { id } = socket;
+    console.log('connection ' + id);
 
-    const {book: bookId} = socket.handshake.query;
-    console.log('book' + bookId);
+    const { bookId } = socket.handshake.query;
+
+    if (!bookId) {
+        console.warn('No bookId provided');
+        return;
+    }
+
     socket.join(bookId);
-    socket.on('msg-to-book', (msg) => {
-        msg.type = `book: ${bookId}`;
-        socket.to(bookId).emit('msg-to-book', msg);
-        socket.emit('msg-to-book', msg);
-    })
+    console.log('Joined room:', bookId);
+
+    try {
+        const comments = await commentStorage.getComments(bookId);
+        socket.emit('load-comments', comments);
+    } catch (e) {
+        console.error('Error loading comments:', e);
+    }
+
+    socket.on('msg-to-book', async (msg) => {
+        try {
+            const comment = {
+                username: msg.username || 'Аноним',
+                text: msg.text,
+                timestamp: new Date().toISOString(),
+                socketId: socket.id
+            };
+
+            await commentStorage.addComment(bookId, comment);
+
+            io.to(bookId).emit('msg-to-book', comment);
+
+        } catch (e) {
+            console.error('Error saving message:', e);
+        }
+    });
 
     socket.on('disconnect', () => {
-        console.log('disconnect' + id);
-    })
-})
+        console.log('disconnect ' + id);
+    });
+});
 
 const PORT = process.env.PORT || 3000
 start()

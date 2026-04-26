@@ -30,6 +30,7 @@
 
 <div class="row">
     <div class="col-4">
+        <h3>Комментарии</h3>
         <div id="list" class="list-group">
 
         </div>
@@ -38,6 +39,7 @@
 
 <div class="row">
     <div class="col-4">
+        <h3>Оставить комментарий</h3>
         <div class="form-group">
             <label for="username">username</label>
             <input
@@ -63,7 +65,10 @@
 <script>
     const bookId = location.pathname.split('/').pop();
     console.log(bookId);
-    const socket = io.connect('/', {query: `book=${bookId}`});
+
+    const socket = io({
+        query: { bookId }
+    });
 
     const boxList       = document.querySelector('#list');
     const inputUsername = document.querySelector('#username');
@@ -71,15 +76,43 @@
     const sendRoom      = document.querySelector('#send-to-book');
 
     const getTmp = (msg) => {
+        const time = msg.timestamp
+            ? new Date(msg.timestamp).toLocaleTimeString()
+            : new Date().toLocaleTimeString();
+
         return `
             <div class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <small>${msg.username}</small>
-                </div>
-                <p class="mb-1">${msg.text}</p>
+              <div class="d-flex w-100 justify-content-between">
+                <small class="text-primary">${escapeHtml(msg.username || 'Аноним')}</small>
+                <small class="text-muted">${time}</small>
+              </div>
+              <p class="mb-1 mt-2">${escapeHtml(msg.text)}</p>
             </div>
-        `;
+  `;
     };
+
+    const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    const appendComment = (msg) => {
+        const div = getTmp(msg);
+        boxList.insertAdjacentHTML('beforeend', div);
+    }
+
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error('Connection error:', err);
+    });
+
+    socket.on('load-comments', (comments) => {
+        comments.forEach(appendComment);
+    });
 
     socket.on('msg-to-book', (msg) => {
         const div = getTmp(msg)
@@ -88,9 +121,12 @@
 
     sendRoom.addEventListener('click', () => {
         socket.emit('msg-to-book', {
-            username: inputUsername.value,
+            username: inputUsername.value || 'Аноним',
             text: inputText.value,
         })
+
+        inputUsername.value = '';
+        inputText.value = '';
     })
 </script>
 

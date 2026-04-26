@@ -6,9 +6,9 @@ ARG NODE_ENV=production
 
 COPY ./*.json ./
 RUN npm install
-COPY ./middleware middleware/
-COPY ./routes routes/
-COPY ./views views/
+COPY middleware middleware/
+COPY routes routes/
+COPY views views/
 COPY index.js index.js
 COPY library.js library.js
 
