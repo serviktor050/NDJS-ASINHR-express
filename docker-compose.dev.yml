@@ -26,7 +26,7 @@ services:
     environment:
       - PORT=3002
       - REDIS_URL=redis://storage
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - storage
 
