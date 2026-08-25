@@ -1,10 +1,10 @@
-interface BookFile {
+export interface BookFile {
     fileCover: string
     fileName: string
     fileBook:string
 }
 
-interface Book {
+export interface Book {
     id: string
     title: string
     description: string
@@ -13,10 +13,11 @@ interface Book {
     file: BookFile;
 }
 
-abstract class BooksRepository {
-    abstract createBook(book: Book): void
-    abstract getBook(id: string): Book | null
-    abstract getBooks(): Book[]
-    abstract updateBook(id: string, updatedBook: Book): void
-    abstract deleteBook(id: string): void
-}
+// @injectable()
+// export abstract class BooksRepository {
+//     abstract createBook(book: Book): void
+//     abstract getBook(id: string): Book | null
+//     abstract getBooks(): Book[]
+//     abstract updateBook(id: string, updatedBook: Book): void
+//     abstract deleteBook(id: string): void
+// }

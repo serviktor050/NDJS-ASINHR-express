@@ -7,11 +7,14 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
+    "module": "common.js",
+    "target": "es5",
+    "types": ["reflect-metadata"],
     // For nodejs:
-    // "lib": ["esnext"],
+     "lib": ["es6", "dom"],
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     // "types": ["node"],
     // and npm install -D @types/node
 
