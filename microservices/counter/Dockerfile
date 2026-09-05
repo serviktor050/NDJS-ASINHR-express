@@ -7,6 +7,6 @@ ARG NODE_ENV=production
 COPY ./*.json ./
 RUN npm install
 
-COPY index.js index.js
+COPY index.js index.ts
 
 CMD ["npm", "run", "prod"]

@@ -1,152 +1,128 @@
-const express = require('express');
-const path = require('path');
+import * as express from 'express';
+import { Request, Response } from 'express';
+import bookStorage from '../storage';
+import { Book } from '../library';
+import container from '../container';
+import BooksRepository from '../booksRepository';
+
 const router = express.Router();
-const fileMulter = require("../middleware/file");
-const bookStorage = require('../storage');
-const { Book, library } = require('../library');
-const BookSchema = require('../models/book');
-
-const container = require('../container');
-const BooksRepository = require('../booksRepository');
-
 
 /*Роуты для задания по typescript с использованием IoC контейнера*/
 
-router.get('/api/books', async (req, res) => {
+router.get('/api/books', async (_req: Request, res: Response) => {
     const repo = container.get(BooksRepository);
     try {
         const books = await repo.getBooks();
         res.json(books);
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-router.get('/api/books/:id', async (req, res) => {
+router.get('/api/books/:id', async (req: Request, res: Response) => {
     const repo = container.get(BooksRepository);
     const { id } = req.params;
     try {
         const book = await repo.getBook(id);
-        if (!book) return res.status(404).json('Не найдено');
+        if (!book) {
+            return res.status(404).json('Не найдено');
+        }
         res.json(book);
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-router.post('/api/books/', async (req, res) => {
+router.post('/api/books', async (req: Request, res: Response) => {
     const repo = container.get(BooksRepository);
     try {
         const newBook = await repo.createBook(req.body);
         res.status(201).json(newBook);
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-router.put('/api/books/:id', async (req, res) => {
+router.put('/api/books/:id', async (req: Request, res: Response) => {
     const repo = container.get(BooksRepository);
     const { id } = req.params;
     try {
         const updatedBook = await repo.updateBook(id, req.body);
-        if (!updatedBook) return res.status(404).json('Не найдено');
+        if (!updatedBook) {
+            return res.status(404).json('Не найдено');
+        }
         res.json(updatedBook);
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-router.delete('/api/books/:id', async (req, res) => {
+router.delete('/api/books/:id', async (req: Request, res: Response) => {
     const repo = container.get(BooksRepository);
     const { id } = req.params;
     try {
         const result = await repo.deleteBook(id);
-        if (result.deletedCount === 0) return res.status(404).json('Не найдено');
+        if (result.deletedCount === 0) {
+            return res.status(404).json('Не найдено');
+        }
         res.json('ok');
     } catch (e) {
-        res.status(500).json(e);
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
 /*Роуты для задания по докеру с использованием Redis*/
 
-router.get('/books', async (req, res) => {
+router.get('/books', async (_req: Request, res: Response) => {
     const books = await bookStorage.getAllBooks();
-
     res.render('books/index', {
         title: 'Книги',
-        books: books,
-    })
-})
+        books,
+    });
+});
 
-router.get('/books/create', (req, res) => {
-    res.render("books/create", {
-        title: "Добавить книгу",
+router.get('/books/create', (_req: Request, res: Response) => {
+    res.render('books/create', {
+        title: 'Добавить книгу',
         book: {},
     });
-})
+});
 
-router.post('/books/create', async (req, res) => {
-    const {title, description} = req.body;
-    const newBook = new Book({
-        title,
-        description,
-    })
+router.post('/books/create', async (req: Request, res: Response) => {
+    const { title, description } = req.body;
+    const newBook = new Book({ title, description });
     await bookStorage.saveBook(newBook);
+    res.redirect('/books');
+});
 
-    res.redirect('/books')
-})
-
-router.get('/books', async (req, res) => {
-    const books = await bookStorage.getAllBooks();
-
-    res.render('books/index', {
-        title: 'Книги',
-        books: books,
-    })
-})
-
-router.get('/books/create', (req, res) => {
-    res.render("books/create", {
-        title: "Добавить книгу",
-        book: {},
-    });
-})
-
-router.post('/books/create', async (req, res) => {
-    const {title, description} = req.body;
-    const newBook = new Book({
-        title,
-        description,
-    })
-    await bookStorage.saveBook(newBook);
-
-    res.redirect('/books')
-})
-
-router.get('/books/:id', async (req, res) => {
-    const {id} = req.params;
+router.get('/books/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
     const currentBook = await bookStorage.getBookById(id);
 
-    if(currentBook) {
-        res.render("books/view", {
-            title: "О книге",
+    if (currentBook) {
+        res.render('books/view', {
+            title: 'О книге',
             book: currentBook,
-            count: currentBook.count | 'Нет просмотров'
+            count: currentBook.count !== undefined ? currentBook.count : 'Нет просмотров',
         });
     } else {
         res.redirect('/404');
     }
 });
 
-router.get('/books/update/:id', async (req, res) => {
+router.get('/books/update/:id', async (req: Request, res: Response) => {
     const books = await bookStorage.getAllBooks();
-    const {id} = req.params;
-    const currentBook = books.find(el => el.id === id)
+    const { id } = req.params;
+    const currentBook = books.find((el) => el.id === id);
 
-    if(currentBook) {
-        res.render("books/update", {
-            title: "Изменить книгу",
+    if (currentBook) {
+        res.render('books/update', {
+            title: 'Изменить книгу',
             book: currentBook,
         });
     } else {
@@ -154,27 +130,29 @@ router.get('/books/update/:id', async (req, res) => {
     }
 });
 
-router.post('/books/update/:id', async (req, res) => {
+router.post('/books/update/:id', async (req: Request, res: Response) => {
     const books = await bookStorage.getAllBooks();
-    const {id} = req.params;
-    const {title, description} = req.body;
-    const updates = {title, description}
-    const currentBookIdx = books.findIndex(el => el.id === id)
+    const { id } = req.params;
+    const { title, description } = req.body;
+    const updates: Partial<Book> = { title, description };
 
+    const currentBookIdx = books.findIndex((el) => el.id === id);
     if (currentBookIdx === -1) {
-        res.redirect('/404');
+        return res.redirect('/404');
     }
 
     await bookStorage.updateBook(books, id, updates);
     res.redirect(`/books/${id}`);
 });
 
-router.post('/books/delete/:id', async (req, res) => {
-    const {id} = req.params;
+router.post('/books/delete/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
     const isDeleted = await bookStorage.deleteBook(id);
 
     if (isDeleted) {
-        res.redirect(`/books`);
+        res.redirect('/books');
+    } else {
+        res.redirect('/404');
     }
 });
 
@@ -346,4 +324,4 @@ router.post('/books/delete/:id', async (req, res) => {
 //     }
 // })
 
-module.exports = router;
+export default router;

@@ -1,25 +1,37 @@
-const redis = require('redis');
+import { createClient } from 'redis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost';
-const client = redis.createClient({ url: REDIS_URL });
+const client = createClient({ url: REDIS_URL });
 
 (async () => {
     await client.connect();
 })();
 
+export interface Comment {
+    username: string;
+    text: string;
+    timestamp: string;
+    socketId: string;
+}
+
 class CommentStorage {
-    async getComments(bookId) {
+    async getComments(bookId: string): Promise<Comment[]> {
         try {
             const key = `comments:${bookId}`;
             const comments = await client.get(key);
-            return comments ? JSON.parse(comments) : [];
+            if (!comments) return [];
+
+            const parsed: unknown = JSON.parse(comments.toString());
+            if (!Array.isArray(parsed)) return [];
+
+            return parsed as Comment[];
         } catch (e) {
             console.error('Error getComments:', e);
             return [];
         }
     }
 
-    async addComment(bookId, comment) {
+    async addComment(bookId: string, comment: Comment): Promise<Comment> {
         const key = `comments:${bookId}`;
         const comments = await this.getComments(bookId);
 
@@ -30,4 +42,4 @@ class CommentStorage {
     }
 }
 
-module.exports = new CommentStorage();
+export default new CommentStorage();

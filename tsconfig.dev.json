@@ -2,20 +2,19 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+   "rootDir": "./src",
+   "outDir": "./dist",
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "common.js",
-    "target": "es5",
-    "types": ["reflect-metadata"],
+    "module": "commonjs",
+    "target": "es6",
     // For nodejs:
-     "lib": ["es6", "dom"],
+     "lib": ["es6"],
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    // "types": ["node"],
+    "types": ["node", "reflect-metadata"],
     // and npm install -D @types/node
 
     // Other Outputs
@@ -36,13 +35,14 @@
     // "noPropertyAccessFromIndexSignature": true,
 
     // Recommended Options
-    "strict": true,
-    "strictNullChecks": false,
-    "jsx": "react-jsx",
+   "strict": true,
+   "strictNullChecks": true,
+   "esModuleInterop": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
   }
 }

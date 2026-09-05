@@ -14,7 +14,7 @@ services:
       - COUNTER_SERVICE_URL=http://counter:3002
     ports:
       - "8080:8080"
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - storage
       - counter

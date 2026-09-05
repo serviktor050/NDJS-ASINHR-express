@@ -1,23 +1,31 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const session = require('express-session');
-const passport = require('passport');
-const http = require('http');
-const socketIO = require('socket.io');
-const commentStorage = require('./commentStorage');
+import * as express from 'express';
+import mongoose from 'mongoose';
+import session from 'express-session';
+import passport from 'passport';
+import * as http from 'http';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import commentStorage from './commentStorage';
 
-const userRoute = require('./routes/userRoute');
-const booksRoute = require('./routes/booksRoute');
-const mainRoute = require('./routes/mainRoute');
+import userRoute from './routes/userRoute';
+import booksRoute from './routes/booksRoute';
+import mainRoute from './routes/mainRoute';
 
-const errorMiddleware = require('./middleware/error');
+import errorMiddleware from './middleware/error';
 
 const app = express();
+
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
-app.use(session({ secret: 'SECRET'}));
+app.use(
+    session({
+        secret: 'SECRET',
+        resave: false,
+        saveUninitialized: false,
+    })
+);
+
 app.use(passport.initialize())
 app.use(passport.session())
 
@@ -27,22 +35,22 @@ app.use('/', booksRoute);
 
 app.use(errorMiddleware);
 
-const server = http.Server(app);
-const io = socketIO(server);
+const server = http.createServer(app);
+const io = new SocketIOServer(server);
 
-async function start() {
+async function start(): Promise<void> {
     try {
         await mongoose.connect('mongodb://root:example@mongo:27017/?authSource=admin');
         console.log('MongoDB connected');
         server.listen(PORT, () => {
             console.log(`Server listening on ${PORT}`);
-        })
+        });
     } catch (e) {
         console.error(e);
     }
 }
 
-io.on('connection', async (socket) => {
+io.on('connection', async (socket: Socket) => {
     const { id } = socket;
     console.log('connection ' + id);
 
@@ -53,29 +61,30 @@ io.on('connection', async (socket) => {
         return;
     }
 
-    socket.join(bookId);
-    console.log('Joined room:', bookId);
+    const room = Array.isArray(bookId) ? bookId[0] : bookId;
+
+    socket.join(room);
+    console.log('Joined room:', room);
 
     try {
-        const comments = await commentStorage.getComments(bookId);
+        const comments = await commentStorage.getComments(room);
         socket.emit('load-comments', comments);
     } catch (e) {
         console.error('Error loading comments:', e);
     }
 
-    socket.on('msg-to-book', async (msg) => {
+    socket.on('msg-to-book', async (msg: { username?: string; text: string }) => {
         try {
             const comment = {
                 username: msg.username || 'Аноним',
                 text: msg.text,
                 timestamp: new Date().toISOString(),
-                socketId: socket.id
+                socketId: socket.id,
             };
 
-            await commentStorage.addComment(bookId, comment);
+            await commentStorage.addComment(room, comment);
 
-            io.to(bookId).emit('msg-to-book', comment);
-
+            io.to(room).emit('msg-to-book', comment);
         } catch (e) {
             console.error('Error saving message:', e);
         }

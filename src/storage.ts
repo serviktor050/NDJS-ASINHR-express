@@ -1,11 +1,11 @@
-const redis = require('redis');
-const axios = require('axios');
-const { Book } = require('./library');
+import { createClient } from 'redis';
+import axios from 'axios';
+import { Book } from './library';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost';
 const COUNTER_SERVICE_URL = process.env.COUNTER_SERVICE_URL || 'http://counter:3002';
 
-const client = redis.createClient({url: REDIS_URL});
+const client = createClient({ url: REDIS_URL });
 
 (async () => {
     await client.connect();
@@ -20,31 +20,39 @@ const counterService = axios.create({
 });
 
 class BookStorage {
-    async getAllBooks() {
+    async getAllBooks(): Promise<Book[]> {
         try {
             const booksJson = await client.get(BOOKS_KEY);
-            return booksJson ? JSON.parse(booksJson).map(data => new Book(data)) : [];
+            if (!booksJson) return [];
+
+            const parsed: unknown = JSON.parse(booksJson.toString());
+            if (!Array.isArray(parsed)) return [];
+
+            return parsed.map((data: unknown) => new Book(data as Partial<Book>));
         } catch (error) {
             console.error('Error getting all books:', error);
             return [];
         }
     }
 
-    async getBookById(id) {
+    async getBookById(id: string): Promise<Book | null> {
         const books = await this.getAllBooks();
-        const book = books.find(book => book.id === id) || null;
+        const book = books.find((book: Book) => book.id === id) || null;
 
         if (book) {
             try {
                 console.log(`Fetching counter for book ${id} from ${COUNTER_SERVICE_URL}`);
                 const response = await counterService.get(`/counter/${id}`);
                 console.log(`Counter response for ${id}:`, response.data);
+
                 book.count = response.data.count || 0;
 
                 await counterService.post(`/counter/${id}/incr`);
                 console.log(`Counter incremented for ${id}`);
-            } catch (counterError) {
-                console.warn('Counter service unavailable:', counterError.message);
+            } catch (counterError: unknown) {
+                const errorMessage =
+                    counterError instanceof Error ? counterError.message : 'Unknown error';
+                console.warn('Counter service unavailable:', errorMessage);
                 console.warn('Full error:', counterError);
                 book.count = 0;
             }
@@ -52,24 +60,29 @@ class BookStorage {
         return book;
     }
 
-    async saveBook(book) {
+    async saveBook(book: Book): Promise<Book> {
         const books = await this.getAllBooks();
         books.push(book);
         await client.set(BOOKS_KEY, JSON.stringify(books));
         return book;
     }
 
-    async updateBook(books, id, updates) {
-        const index = books.findIndex(book => book.id === id);
+    async updateBook(
+        books: Book[],
+        id: string,
+        updates: Partial<Book>
+    ): Promise<Book | null> {
+        const index = books.findIndex((book: Book) => book.id === id);
+        if (index === -1) return null;
 
-        books[index] = { ...books[index], ...updates };
+        books[index] = Object.assign(books[index], updates);
         await client.set(BOOKS_KEY, JSON.stringify(books));
         return books[index];
     }
 
-    async deleteBook(id) {
+    async deleteBook(id: string): Promise<boolean> {
         const books = await this.getAllBooks();
-        const filteredBooks = books.filter(book => book.id !== id);
+        const filteredBooks = books.filter((book: Book) => book.id !== id);
 
         if (filteredBooks.length === books.length) return false;
 
@@ -78,4 +91,4 @@ class BookStorage {
     }
 }
 
-module.exports = new BookStorage();
+export default new BookStorage();
